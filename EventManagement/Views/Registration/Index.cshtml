@@ -1,0 +1,121 @@
+﻿<div class="form-container">
+	<h3 class="text-center form-title">Event Registration</h3>
+
+	<form id="registrationForm" method="post">
+		<div class="mb-3">
+			<label class="form-label">First Name</label>
+			<input id="FirstName" class="form-control" placeholder="Enter First Name" />
+			<span class="text-danger"></span>
+		</div>
+
+		<div class="mb-3">
+			<label class="form-label">Last Name</label>
+			<input id="LastName" class="form-control" placeholder="Enter Last Name" />
+			<span class="text-danger"></span>
+		</div>
+
+		<div class="mb-3">
+			<label class="form-label">GuestCount</label>
+			<input id="GuestCount" type="text" class="form-control"
+				   pattern="^[1-8]$" title="Enter a number between 1 and 8" required placeholder="Enter Number Of Guest" />
+			<span class="text-danger"></span>
+		</div>
+
+
+		<div class="mb-3">
+			<label class="form-label">Contact No.</label>
+			<input type="text" id="ContactNo" class="form-control" pattern="^[6-9]\d{9}$" maxlength="10" title="Enter a valid 10-digit Indian mobile number" required placeholder="Enter Contact Details" />
+			<span class="text-danger"></span>
+		</div>
+
+		<button onclick="SubmitDetails(this)" type="button" class="btn btn-primary w-100">Register</button>
+	</form>
+</div>
+<script>
+	function SubmitDetails(e) {
+
+		var	FirstName =  $("#FirstName").val();
+		var	LastName =  $("#LastName").val();
+		var	GuestCount =  $("#GuestCount").val();
+		var	ContactNo = $("#ContactNo").val();
+
+		if(FirstName === "" || LastName === "" || GuestCount === "" || ContactNo === "") {
+			Swal.fire({
+				title: 'Error!',
+				text: 'Please fill all the fields.',
+				icon: 'error'
+			});
+			return;
+		}
+		// GuestCount validation (1 to 8 only)
+		const guestCountPattern = /^[1-8]$/;
+		if (!guestCountPattern.test(GuestCount)) {
+			Swal.fire({
+				title: 'Invalid Guest Count!',
+				text: 'Guest count must be a number between 1 and 8.',
+				icon: 'error'
+			});
+			return;
+		}
+
+		// ContactNo validation (Indian mobile numbers only)
+		const contactPattern = /^[6-9]\d{9}$/;
+		if (!contactPattern.test(ContactNo)) {
+			Swal.fire({
+				title: 'Invalid Contact!',
+				text: 'Enter a valid 10-digit Indian mobile number.',
+				icon: 'error'
+			});
+			return;
+		}
+
+		$.ajax({
+			type: 'POST',
+			url: '/Registration/RegisterAjax',
+			data: {FirstName : FirstName,LastName:LastName,ContactNo:ContactNo,GuestCount:GuestCount },
+			success: function (response) {
+				if (response.success) {
+						Swal.fire({
+							title: 'Registered!',
+							text: response.message,
+							icon: 'success',
+							showCancelButton: false,
+							confirmButtonText: 'Download Ticket',
+						}).then(() => {
+								const ticketWindow = window.open(`/Registration/DownloadTicket?code=${response.code}&firstName=${FirstName}&lastName=${LastName}&contactNo=${ContactNo}&guestCount=${GuestCount}`, '_blank');
+								const onFocus = () => {
+								Swal.fire({
+									title: 'Success',
+									text: `Your Ticket PDF download successfully! Your Unique Code is : ${response.code}`,
+									icon: 'success',
+									confirmButtonText: 'OK'
+								}).then(() => {
+									location.reload();
+								});
+								window.removeEventListener('focus', onFocus);
+							};
+
+							window.addEventListener('focus', onFocus);
+
+						});
+
+				} else {
+					Swal.fire({
+						title: 'Error!',
+						text: response.message,
+						icon: 'error'
+					});
+				}
+			},
+			error: function () {
+				Swal.fire('Error!', 'An unexpected error occurred.', 'error');
+			}
+		});
+	}
+
+</script>
+
+
+@section Scripts {
+	@await Html.PartialAsync("_ValidationScriptsPartial")
+}
